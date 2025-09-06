@@ -214,7 +214,7 @@ function sendToBetterStack(message, customerSlug, debugMode = false) {
 }
 
 // 🚀 Função principal do MyMetric OneTag Shopify
-function mymetric_onetag_shopify(event, trackingIds, customerSlug, debugMode = true) {
+function mymetric_onetag_shopify(trackingIds, customerSlug, debugMode = true) {
   // Log de inicialização
   if (debugMode) {
     console.log(
@@ -652,10 +652,7 @@ function setupShopifyEvents(debugMode = false, customerSlug = 'unknown') {
   });
 }
 
-
-
-mymetric_onetag_shopify(
-  ["G-WQKK3VE3KF"],
-  "linus",
-  true
-);
+// ---- Inicialização automática (apenas GA4 por enquanto):
+mymetric_onetag_shopify([
+  "G-0JR4HXQK0K"           // GA4 ID
+], "linus", true); // customerSlug, debugMode
