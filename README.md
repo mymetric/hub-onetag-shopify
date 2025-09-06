@@ -50,8 +50,8 @@ register(({analytics}) => {
     "G-0JR4HXQK0K"  // Your GA4 Measurement ID
   ], "your-customer-slug", true); // customerSlug, debugMode
   
-  // Configurar eventos do Shopify
-  setupShopifyEvents(analytics, true, "your-customer-slug");
+  // Os eventos analytics.subscribe já estão configurados no arquivo
+  // Não precisa de configuração adicional
 });
 ```
 
