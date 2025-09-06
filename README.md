@@ -41,17 +41,17 @@
 
 Add this script to your Shopify theme's `theme.liquid` file before the closing `</head>` tag:
 
-```html
-<script type="text/javascript">
+```js
+var trackingIds = ["G-WQKK3VE3KF"];
 var mmonetag = document.createElement("script");
 mmonetag.src = "https://cdn.jsdelivr.net/gh/mymetric/hub-onetag-shopify@main/main.js";
 mmonetag.onload = function() {
-    mymetric_onetag_shopify([
-        "G-0JR4HXQK0K"  // Your GA4 Measurement ID
-    ], "your-customer-slug", true); // customerSlug, debugMode
+
+    analytics.subscribe("all_events", (event) => {
+        mymetric_onetag_shopify(event, trackingIds, "linus", true);
+    });
 };
 document.head.appendChild(mmonetag);
-</script>
 ```
 
 ### 2. Configuration

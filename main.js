@@ -214,7 +214,7 @@ function sendToBetterStack(message, customerSlug, debugMode = false) {
 }
 
 // 🚀 Função principal do MyMetric OneTag Shopify
-function mymetric_onetag_shopify(trackingIds, customerSlug, debugMode = true) {
+function mymetric_onetag_shopify(event, trackingIds, customerSlug, debugMode = true) {
   // Log de inicialização
   if (debugMode) {
     console.log(
@@ -294,7 +294,7 @@ function mymetric_onetag_shopify(trackingIds, customerSlug, debugMode = true) {
   if (debugMode) {
     console.log(`%c🛍️ Configurando eventos do Shopify`, 'color: #f59e0b; font-size: 11px;');
   }
-  setupShopifyEvents(debugMode, customerSlug);
+  setupShopifyEvents(event, debugMode, customerSlug);
 
   // Log de conclusão
   if (debugMode) {
@@ -311,17 +311,17 @@ function initGA4(ga4Ids, debugMode = false) {
     console.log(`%c  📊 Carregando gtag.js para: ${ga4Ids[0]}`, 'color: #3b82f6; font-size: 10px;');
   }
   
-    // Carregar gtag.js dinamicamente
-    var gtagScript = document.createElement("script");
+  // Carregar gtag.js dinamicamente
+  var gtagScript = document.createElement("script");
   gtagScript.src = `https://www.googletagmanager.com/gtag/js?id=${ga4Ids[0]}`;
-    gtagScript.async = true;
-    document.head.appendChild(gtagScript);
+  gtagScript.async = true;
+  document.head.appendChild(gtagScript);
   
-    // Inicializar gtag
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){ dataLayer.push(arguments); }
-    window.gtag = gtag; // expõe globalmente
-    gtag("js", new Date());
+  // Inicializar gtag
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  window.gtag = gtag; // expõe globalmente
+  gtag("js", new Date());
   
   // Configurar todos os IDs do GA4
   ga4Ids.forEach(id => {
@@ -357,302 +357,232 @@ function initPinterestTag(pinterestIds, debugMode = false) {
 }
 
 // 🛍️ Configurar eventos do Shopify
-function setupShopifyEvents(debugMode = false, customerSlug = 'unknown') {
+function setupShopifyEvents(event, debugMode = false, customerSlug = 'unknown') {
   if (debugMode) {
     console.log(`%c  🛍️ Configurando 13 eventos do Shopify`, 'color: #f59e0b; font-size: 10px;');
   }
-    // Mapear eventos do Shopify Customer Events para GA4
-    analytics.subscribe("page_viewed", (event) => {
-    logMyMetricEvent('page_view', {
-      location: event.context.document.location.href,
-      title: event.context.document.title
-    });
-    
-    trackGA4Event("page_view", {
-        page_location: event.context.document.location.href,
-        page_title: event.context.document.title
-      });
-    
-    sendToBetterStack(`Page viewed: ${event.context.document.title}`, customerSlug, debugMode);
-    });
+
+  console.log(event);
   
-    analytics.subscribe("product_viewed", (event) => {
-      const product = event.data.productVariant?.product;
-    
-    logMyMetricEvent('product_view', {
-      product: product?.title,
-      brand: product?.vendor,
-      price: event.data.productVariant?.price?.amount,
-      category: product?.type
-    });
-    
-    trackGA4Event("view_item", {
-        items: [{
-          item_id: product?.id,
-          item_name: product?.title,
-          item_brand: product?.vendor,
-          item_category: product?.type,
-          price: event.data.productVariant?.price?.amount
-        }]
+  // Mapear eventos do Shopify Customer Events para GA4
+  if (event.name === "page_viewed") {
+      logMyMetricEvent('page_view', {
+          location: event.context.document.location.href,
+          title: event.context.document.title
       });
-    
-    sendToBetterStack(`Product viewed: ${product?.title} - ${product?.vendor}`, customerSlug, debugMode);
-    });
-  
-    analytics.subscribe("product_added_to_cart", (event) => {
-      const cartLine = event.data.cartLine;
-      const product = cartLine?.merchandise?.product;
-    
-    logMyMetricEvent('add_to_cart', {
-      product: product?.title,
-      quantity: cartLine?.quantity,
-      price: cartLine?.merchandise?.price?.amount,
-      total: cartLine?.cost?.totalAmount?.amount,
-      variant: cartLine?.merchandise?.title
-    });
-  
-    trackGA4Event("add_to_cart", {
-        currency: cartLine?.merchandise?.price?.currencyCode,
-        value: cartLine?.cost?.totalAmount?.amount,
-        items: [{
-          item_id: product?.id,
-          item_name: product?.title,
-          item_brand: product?.vendor,
-          item_category: product?.type,
-          item_variant: cartLine?.merchandise?.title, // ex: "36/37"
-          price: cartLine?.merchandise?.price?.amount,
-          quantity: cartLine?.quantity,
-          sku: cartLine?.merchandise?.sku
-        }]
+      trackGA4Event("page_view", {
+          page_location: event.context.document.location.href,
+          page_title: event.context.document.title
       });
-    
-    sendToBetterStack(`Added to cart: ${product?.title} (${cartLine?.quantity}x) - ${cartLine?.cost?.totalAmount?.amount}`, customerSlug, debugMode);
-    });
-  
-    analytics.subscribe("checkout_started", (event) => {
-    logMyMetricEvent('checkout_start', {
-      total: event.data.checkout?.totalPrice?.amount,
-      currency: event.data.checkout?.currencyCode
-    });
-    
-    trackGA4Event("begin_checkout", {
-        currency: event.data.checkout?.currencyCode,
-        value: event.data.checkout?.totalPrice?.amount
+      sendToBetterStack(`Page viewed: ${event.context.document.title}`, customerSlug, debugMode);
+  }
+  if (event.name === "product_viewed") {
+      logMyMetricEvent('product_view', {
+          product: event.data.productVariant?.product?.title,
+          brand: event.data.productVariant?.product?.vendor,
+          price: event.data.productVariant?.price?.amount,
+          category: event.data.productVariant?.product?.type
       });
-    
-    sendToBetterStack(`Checkout started: ${event.data.checkout?.totalPrice?.amount} ${event.data.checkout?.currencyCode}`, customerSlug, debugMode);
-  });
-
-  analytics.subscribe("payment_info_submitted", (event) => {
-    logMyMetricEvent('payment_info', {
-      paymentMethod: event.data.paymentMethod?.type || 'Unknown',
-      currency: event.data.checkout?.currencyCode,
-      total: event.data.checkout?.totalPrice?.amount
-    });
-    
-    trackGA4Event("add_payment_info", {
-      currency: event.data.checkout?.currencyCode,
-      value: event.data.checkout?.totalPrice?.amount,
-      payment_type: event.data.paymentMethod?.type
-    });
-    
-    sendToBetterStack(`Payment info submitted: ${event.data.paymentMethod?.type} - ${event.data.checkout?.totalPrice?.amount} ${event.data.checkout?.currencyCode}`, customerSlug, debugMode);
-  });
-
-  analytics.subscribe("checkout_shipping_info_submitted", (event) => {
-    logMyMetricEvent('shipping_info', {
-      country: event.data.checkout?.shippingAddress?.country,
-      city: event.data.checkout?.shippingAddress?.city,
-      postalCode: event.data.checkout?.shippingAddress?.zip,
-      shippingMethod: event.data.checkout?.shippingLine?.title || 'Standard'
-    });
-    
-    trackGA4Event("add_shipping_info", {
-      currency: event.data.checkout?.currencyCode,
-      value: event.data.checkout?.totalPrice?.amount,
-      shipping_tier: event.data.checkout?.shippingLine?.title
-    });
-    
-    sendToBetterStack(`Shipping info submitted: ${event.data.checkout?.shippingAddress?.country} - ${event.data.checkout?.shippingLine?.title}`, customerSlug, debugMode);
-  });
-
-  analytics.subscribe("alert_displayed", (event) => {
-    const alert = event.data.alert;
-    
-    logMyMetricEvent('alert_displayed', {
-      target: alert?.target,
-      type: alert?.type,
-      message: alert?.message
-    });
-    
-    // Enviar evento customizado para GA4
-    trackGA4Event("alert_displayed", {
-      alert_target: alert?.target,
-      alert_type: alert?.type,
-      alert_message: alert?.message
-    });
-    
-    sendToBetterStack(`Alert displayed: ${alert?.type} - ${alert?.message} (target: ${alert?.target})`, customerSlug, debugMode);
-  });
-
-  analytics.subscribe("cart_viewed", (event) => {
-    const cart = event.data.cart;
-    const firstCartLine = cart?.lines?.[0];
-    
-    logMyMetricEvent('cart_viewed', {
-      totalCost: cart?.cost?.totalAmount?.amount,
-      currency: cart?.cost?.totalAmount?.currencyCode,
-      itemsCount: cart?.lines?.length || 0,
-      firstItemName: firstCartLine?.merchandise?.product?.title
-    });
-    
-    trackGA4Event("view_cart", {
-      currency: cart?.cost?.totalAmount?.currencyCode,
-      value: cart?.cost?.totalAmount?.amount,
-      items: cart?.lines?.map(line => ({
-        item_id: line?.merchandise?.product?.id,
-        item_name: line?.merchandise?.product?.title,
-        item_brand: line?.merchandise?.product?.vendor,
-        item_category: line?.merchandise?.product?.type,
-        item_variant: line?.merchandise?.title,
-        price: line?.merchandise?.price?.amount,
-        quantity: line?.quantity
-      }))
-    });
-    
-    sendToBetterStack(`Cart viewed: ${cart?.cost?.totalAmount?.amount} ${cart?.cost?.totalAmount?.currencyCode} (${cart?.lines?.length || 0} items)`, customerSlug, debugMode);
-  });
-
-  analytics.subscribe("checkout_address_info_submitted", (event) => {
-    const checkout = event.data.checkout;
-    const address = checkout?.shippingAddress;
-    
-    logMyMetricEvent('checkout_address_info', {
-      addressLine1: address?.address1,
-      addressLine2: address?.address2,
-      city: address?.city,
-      country: address?.country
-    });
-    
-    trackGA4Event("add_shipping_info", {
-      currency: checkout?.currencyCode,
-      value: checkout?.totalPrice?.amount,
-      shipping_tier: checkout?.shippingLine?.title
-    });
-    
-    sendToBetterStack(`Address info submitted: ${address?.city}, ${address?.country}`, customerSlug, debugMode);
-  });
-
-  analytics.subscribe("checkout_contact_info_submitted", (event) => {
-    const checkout = event.data.checkout;
-    
-    logMyMetricEvent('checkout_contact_info', {
-      email: checkout?.email,
-      phone: checkout?.phone
-    });
-    
-    trackGA4Event("add_contact_info", {
-      currency: checkout?.currencyCode,
-      value: checkout?.totalPrice?.amount
-    });
-    
-    sendToBetterStack(`Contact info submitted: ${checkout?.email}`, customerSlug, debugMode);
-  });
-
-  analytics.subscribe("collection_viewed", (event) => {
-    const collection = event.data.collection;
-    const firstProduct = collection?.productVariants?.[0];
-    
-    logMyMetricEvent('collection_viewed', {
-      collectionTitle: collection?.title,
-      priceFirstItem: firstProduct?.price?.amount
-    });
-    
-    trackGA4Event("view_item_list", {
-      item_list_name: collection?.title,
-      items: collection?.productVariants?.slice(0, 10).map(variant => ({
-        item_id: variant?.product?.id,
-        item_name: variant?.product?.title,
-        item_brand: variant?.product?.vendor,
-        item_category: variant?.product?.type,
-        price: variant?.price?.amount
-      }))
-    });
-    
-    sendToBetterStack(`Collection viewed: ${collection?.title}`, customerSlug, debugMode);
-  });
-
-  analytics.subscribe("product_removed_from_cart", (event) => {
-    const cartLine = event.data.cartLine;
-    const product = cartLine?.merchandise?.product;
-    
-    logMyMetricEvent('product_removed_from_cart', {
-      productName: product?.title,
-      variantTitle: cartLine?.merchandise?.title,
-      cartLineCost: cartLine?.cost?.totalAmount?.amount,
-      currency: cartLine?.cost?.totalAmount?.currencyCode
-    });
-    
-    trackGA4Event("remove_from_cart", {
-      currency: cartLine?.cost?.totalAmount?.currencyCode,
-      value: cartLine?.cost?.totalAmount?.amount,
-      items: [{
-        item_id: product?.id,
-        item_name: product?.title,
-        item_brand: product?.vendor,
-        item_category: product?.type,
-        item_variant: cartLine?.merchandise?.title,
-        price: cartLine?.merchandise?.price?.amount,
-        quantity: cartLine?.quantity
-      }]
-    });
-    
-    sendToBetterStack(`Product removed from cart: ${product?.title} - ${cartLine?.cost?.totalAmount?.amount} ${cartLine?.cost?.totalAmount?.currencyCode}`, customerSlug, debugMode);
-  });
-
-  analytics.subscribe("search_submitted", (event) => {
-    const searchResult = event.data.searchResult;
-    const firstProduct = searchResult?.productVariants?.[0];
-    
-    logMyMetricEvent('search_submitted', {
-      searchQuery: searchResult?.query,
-      firstProductTitle: firstProduct?.product?.title
-    });
-    
-    trackGA4Event("search", {
-      search_term: searchResult?.query,
-      items: searchResult?.productVariants?.slice(0, 10).map(variant => ({
-        item_id: variant?.product?.id,
-        item_name: variant?.product?.title,
-        item_brand: variant?.product?.vendor,
-        item_category: variant?.product?.type,
-        price: variant?.price?.amount
-      }))
-    });
-    
-    sendToBetterStack(`Search submitted: "${searchResult?.query}"`, customerSlug, debugMode);
-  });
-
-  analytics.subscribe("ui_extension_errored", (event) => {
-    const alert = event.data.alert;
-    
-    logMyMetricEvent('ui_extension_errored', {
-      appName: alert?.appName,
-      appVersion: alert?.appVersion,
-      apiVersion: alert?.apiVersion,
-      appId: alert?.appId
-    });
-    
-    trackGA4Event("exception", {
-      description: `UI Extension Error: ${alert?.appName} v${alert?.appVersion}`,
-      fatal: false
-    });
-    
-    sendToBetterStack(`UI Extension Error: ${alert?.appName} v${alert?.appVersion} (${alert?.appId})`, customerSlug, debugMode);
-  });
+      trackGA4Event("view_item", {
+          items: [{
+              item_id: event.data.productVariant?.product?.id,
+              item_name: event.data.productVariant?.product?.title,
+              item_brand: event.data.productVariant?.product?.vendor,
+              item_category: event.data.productVariant?.product?.type,
+              price: event.data.productVariant?.price?.amount
+          }]
+      });
+      sendToBetterStack(`Product viewed: ${event.data.productVariant?.product?.title} - ${event.data.productVariant?.product?.vendor}`, customerSlug, debugMode);
+  }
+  if (event.name === "product_added_to_cart") {
+      logMyMetricEvent('add_to_cart', {
+          product: event.data.cartLine?.merchandise?.product?.title,
+          quantity: event.data.cartLine?.quantity,
+          price: event.data.cartLine?.merchandise?.price?.amount,
+          total: event.data.cartLine?.cost?.totalAmount?.amount,
+          variant: event.data.cartLine?.merchandise?.title
+      });
+      trackGA4Event("add_to_cart", {
+          currency: event.data.cartLine?.merchandise?.price?.currencyCode,
+          value: event.data.cartLine?.cost?.totalAmount?.amount,
+          items: [{
+              item_id: event.data.cartLine?.merchandise?.product?.id,
+              item_name: event.data.cartLine?.merchandise?.product?.title,
+              item_brand: event.data.cartLine?.merchandise?.product?.vendor,
+              item_category: event.data.cartLine?.merchandise?.product?.type,
+              item_variant: event.data.cartLine?.merchandise?.title, // ex: "36/37"
+              price: event.data.cartLine?.merchandise?.price?.amount,
+              quantity: event.data.cartLine?.quantity,
+              sku: event.data.cartLine?.merchandise?.sku
+          }]
+      });
+      sendToBetterStack(`Added to cart: ${event.data.cartLine?.merchandise?.product?.title} (${event.data.cartLine?.quantity}x) - ${event.data.cartLine?.cost?.totalAmount?.amount}`, customerSlug, debugMode);
+  }
+  if (event.name === "checkout_started") {
+      logMyMetricEvent('checkout_start', {
+          total: event.data.checkout?.totalPrice?.amount,
+          currency: event.data.checkout?.currencyCode
+      });
+      trackGA4Event("begin_checkout", {
+          currency: event.data.checkout?.currencyCode,
+          value: event.data.checkout?.totalPrice?.amount
+      });
+      sendToBetterStack(`Checkout started: ${event.data.checkout?.totalPrice?.amount} ${event.data.checkout?.currencyCode}`, customerSlug, debugMode);
+  }
+  if (event.name === "payment_info_submitted") {
+      logMyMetricEvent('payment_info', {
+          paymentMethod: event.data.paymentMethod?.type || 'Unknown',
+          currency: event.data.checkout?.currencyCode,
+          total: event.data.checkout?.totalPrice?.amount
+      });
+      trackGA4Event("add_payment_info", {
+          currency: event.data.checkout?.currencyCode,
+          value: event.data.checkout?.totalPrice?.amount,
+          payment_type: event.data.paymentMethod?.type
+      });
+      sendToBetterStack(`Payment info submitted: ${event.data.paymentMethod?.type} - ${event.data.checkout?.totalPrice?.amount} ${event.data.checkout?.currencyCode}`, customerSlug, debugMode);
+  }
+  if (event.name === "checkout_shipping_info_submitted") {
+      logMyMetricEvent('shipping_info', {
+          country: event.data.checkout?.shippingAddress?.country,
+          city: event.data.checkout?.shippingAddress?.city,
+          postalCode: event.data.checkout?.shippingAddress?.zip,
+          shippingMethod: event.data.checkout?.shippingLine?.title || 'Standard'
+      });
+      trackGA4Event("add_shipping_info", {
+          currency: event.data.checkout?.currencyCode,
+          value: event.data.checkout?.totalPrice?.amount,
+          shipping_tier: event.data.checkout?.shippingLine?.title
+      });
+      sendToBetterStack(`Shipping info submitted: ${event.data.checkout?.shippingAddress?.country} - ${event.data.checkout?.shippingLine?.title}`, customerSlug, debugMode);
+  }
+  if (event.name === "alert_displayed") {
+      logMyMetricEvent('alert_displayed', {
+          target: event.data.alert?.target,
+          type: event.data.alert?.type,
+          message: event.data.alert?.message
+      });
+      trackGA4Event("alert_displayed", {
+          alert_target: event.data.alert?.target,
+          alert_type: event.data.alert?.type,
+          alert_message: event.data.alert?.message
+      });
+      sendToBetterStack(`Alert displayed: ${event.data.alert?.type} - ${event.data.alert?.message} (target: ${event.data.alert?.target})`, customerSlug, debugMode);
+  }
+  if (event.name === "cart_viewed") {
+      logMyMetricEvent('cart_viewed', {
+          totalCost: event.data.cart?.cost?.totalAmount?.amount,
+          currency: event.data.cart?.cost?.totalAmount?.currencyCode,
+          itemsCount: event.data.cart?.lines?.length || 0,
+          firstItemName: event.data.cart?.lines?.[0]?.merchandise?.product?.title
+      });
+      trackGA4Event("view_cart", {
+          currency: event.data.cart?.cost?.totalAmount?.currencyCode,
+          value: event.data.cart?.cost?.totalAmount?.amount,
+          items: event.data.cart?.lines?.map(line => ({
+              item_id: line?.merchandise?.product?.id,
+              item_name: line?.merchandise?.product?.title,
+              item_brand: line?.merchandise?.product?.vendor,
+              item_category: line?.merchandise?.product?.type,
+              item_variant: line?.merchandise?.title,
+              price: line?.merchandise?.price?.amount,
+              quantity: line?.quantity
+          }))
+      });
+      sendToBetterStack(`Cart viewed: ${event.data.cart?.cost?.totalAmount?.amount} ${event.data.cart?.cost?.totalAmount?.currencyCode} (${event.data.cart?.lines?.length || 0} items)`, customerSlug, debugMode);
+  }
+  if (event.name === "checkout_address_info_submitted") {
+      logMyMetricEvent('checkout_address_info', {
+          addressLine1: event.data.checkout?.shippingAddress?.address1,
+          addressLine2: event.data.checkout?.shippingAddress?.address2,
+          city: event.data.checkout?.shippingAddress?.city,
+          country: event.data.checkout?.shippingAddress?.country
+      });
+      trackGA4Event("add_shipping_info", {
+          currency: event.data.checkout?.currencyCode,
+          value: event.data.checkout?.totalPrice?.amount,
+          shipping_tier: event.data.checkout?.shippingLine?.title
+      });
+      sendToBetterStack(`Address info submitted: ${event.data.checkout?.shippingAddress?.city}, ${event.data.checkout?.shippingAddress?.country}`, customerSlug, debugMode);
+  }
+  if (event.name === "checkout_contact_info_submitted") {
+      logMyMetricEvent('checkout_contact_info', {
+          email: event.data.checkout?.email,
+          phone: event.data.checkout?.phone
+      });
+      trackGA4Event("add_contact_info", {
+          currency: event.data.checkout?.currencyCode,
+          value: event.data.checkout?.totalPrice?.amount
+      });
+      sendToBetterStack(`Contact info submitted: ${event.data.checkout?.email}`, customerSlug, debugMode);
+  }
+  if (event.name === "collection_viewed") {
+      logMyMetricEvent('collection_viewed', {
+          collectionTitle: event.data.collection?.title,
+          priceFirstItem: event.data.collection?.productVariants?.[0]?.price?.amount
+      });
+      trackGA4Event("view_item_list", {
+          item_list_name: event.data.collection?.title,
+          items: event.data.collection?.productVariants?.slice(0, 10).map(variant => ({
+              item_id: variant?.product?.id,
+              item_name: variant?.product?.title,
+              item_brand: variant?.product?.vendor,
+              item_category: variant?.product?.type,
+              price: variant?.price?.amount
+          }))
+      });
+      sendToBetterStack(`Collection viewed: ${event.data.collection?.title}`, customerSlug, debugMode);
+  }
+  if (event.name === "product_removed_from_cart") {
+      logMyMetricEvent('product_removed_from_cart', {
+          productName: event.data.cartLine?.merchandise?.product?.title,
+          variantTitle: event.data.cartLine?.merchandise?.title,
+          cartLineCost: event.data.cartLine?.cost?.totalAmount?.amount,
+          currency: event.data.cartLine?.cost?.totalAmount?.currencyCode
+      });
+      trackGA4Event("remove_from_cart", {
+          currency: event.data.cartLine?.cost?.totalAmount?.currencyCode,
+          value: event.data.cartLine?.cost?.totalAmount?.amount,
+          items: [{
+              item_id: event.data.cartLine?.merchandise?.product?.id,
+              item_name: event.data.cartLine?.merchandise?.product?.title,
+              item_brand: event.data.cartLine?.merchandise?.product?.vendor,
+              item_category: event.data.cartLine?.merchandise?.product?.type,
+              item_variant: event.data.cartLine?.merchandise?.title,
+              price: event.data.cartLine?.merchandise?.price?.amount,
+              quantity: event.data.cartLine?.quantity
+          }]
+      });
+      sendToBetterStack(`Product removed from cart: ${event.data.cartLine?.merchandise?.product?.title} - ${event.data.cartLine?.cost?.totalAmount?.amount} ${event.data.cartLine?.cost?.totalAmount?.currencyCode}`, customerSlug, debugMode);
+  }
+  if (event.name === "search_submitted") {
+      logMyMetricEvent('search_submitted', {
+          searchQuery: event.data.searchResult?.query,
+          firstProductTitle: event.data.searchResult?.productVariants?.[0]?.product?.title
+      });
+      trackGA4Event("search", {
+          search_term: event.data.searchResult?.query,
+          items: event.data.searchResult?.productVariants?.slice(0, 10).map(variant => ({
+              item_id: variant?.product?.id,
+              item_name: variant?.product?.title,
+              item_brand: variant?.product?.vendor,
+              item_category: variant?.product?.type,
+              price: variant?.price?.amount
+          }))
+      });
+      sendToBetterStack(`Search submitted: "${event.data.searchResult?.query}"`, customerSlug, debugMode);
+  }
+  if (event.name === "ui_extension_errored") {
+      logMyMetricEvent('ui_extension_errored', {
+          appName: event.data.alert?.appName,
+          appVersion: event.data.alert?.appVersion,
+          apiVersion: event.data.alert?.apiVersion,
+          appId: event.data.alert?.appId
+      });
+      trackGA4Event("exception", {
+          description: `UI Extension Error: ${event.data.alert?.appName} v${event.data.alert?.appVersion}`,
+          fatal: false
+      });
+      sendToBetterStack(`UI Extension Error: ${event.data.alert?.appName} v${event.data.alert?.appVersion} (${event.data.alert?.appId})`, customerSlug, debugMode);
+  }
 }
-
-// ---- Inicialização automática (apenas GA4 por enquanto):
-mymetric_onetag_shopify([
-  "G-0JR4HXQK0K"           // GA4 ID
-], "linus", true); // customerSlug, debugMode
