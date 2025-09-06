@@ -294,7 +294,7 @@ function mymetric_onetag_shopify(trackingIds, customerSlug, debugMode = true) {
   if (debugMode) {
     console.log(`%c🛍️ Configurando eventos do Shopify`, 'color: #f59e0b; font-size: 11px;');
   }
-  setupShopifyEvents(debugMode, customerSlug);
+  // setupShopifyEvents será chamado dentro do register do Shopify
 
   // Log de conclusão
   if (debugMode) {
@@ -356,13 +356,13 @@ function initPinterestTag(pinterestIds, debugMode = false) {
   // TODO: Implementar Pinterest Tag
 }
 
-// 🛍️ Configurar eventos do Shopify
-function setupShopifyEvents(debugMode = false, customerSlug = 'unknown') {
+// 🛍️ Configurar eventos do Shopify (deve ser chamado dentro do register)
+function setupShopifyEvents(analytics, debugMode = false, customerSlug = 'unknown') {
   if (debugMode) {
     console.log(`%c  🛍️ Configurando 13 eventos do Shopify`, 'color: #f59e0b; font-size: 10px;');
   }
-    // Mapear eventos do Shopify Customer Events para GA4
-    analytics.subscribe("page_viewed", (event) => {
+  // Mapear eventos do Shopify Customer Events para GA4
+  analytics.subscribe("page_viewed", (event) => {
     logMyMetricEvent('page_view', {
       location: event.context.document.location.href,
       title: event.context.document.title
@@ -651,6 +651,21 @@ function setupShopifyEvents(debugMode = false, customerSlug = 'unknown') {
     sendToBetterStack(`UI Extension Error: ${alert?.appName} v${alert?.appVersion} (${alert?.appId})`, customerSlug, debugMode);
   });
 }
+
+// ---- Exemplo de uso correto no Shopify Web Pixels Extension:
+/*
+import {register} from '@shopify/web-pixels-extension';
+
+register(({analytics}) => {
+  // Inicializar MyMetric OneTag
+  mymetric_onetag_shopify([
+    "G-0JR4HXQK0K"           // GA4 ID
+  ], "linus", true); // customerSlug, debugMode
+  
+  // Configurar eventos do Shopify
+  setupShopifyEvents(analytics, true, "linus");
+});
+*/
 
 // ---- Inicialização automática (apenas GA4 por enquanto):
 mymetric_onetag_shopify([

@@ -37,7 +37,25 @@
 
 ## 🚀 Quick Start
 
-### 1. Install via CDN
+### 1. Install via Shopify Web Pixels Extension
+
+Create a new Web Pixels Extension in your Shopify admin and use this code:
+
+```javascript
+import {register} from '@shopify/web-pixels-extension';
+
+register(({analytics}) => {
+  // Inicializar MyMetric OneTag
+  mymetric_onetag_shopify([
+    "G-0JR4HXQK0K"  // Your GA4 Measurement ID
+  ], "your-customer-slug", true); // customerSlug, debugMode
+  
+  // Configurar eventos do Shopify
+  setupShopifyEvents(analytics, true, "your-customer-slug");
+});
+```
+
+### 2. Alternative: Install via CDN (Theme)
 
 Add this script to your Shopify theme's `theme.liquid` file before the closing `</head>` tag:
 
@@ -54,7 +72,7 @@ document.head.appendChild(mmonetag);
 </script>
 ```
 
-### 2. Configuration
+### 3. Configuration
 
 ```javascript
 mymetric_onetag_shopify(
@@ -74,7 +92,7 @@ mymetric_onetag_shopify(
 - **`customerSlug`** (String): Unique identifier for your store/customer
 - **`debugMode`** (Boolean): Enable detailed console logging
 
-### 3. Example Configurations
+### 4. Example Configurations
 
 #### Basic Setup (GA4 only)
 ```javascript
