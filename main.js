@@ -214,7 +214,7 @@ function sendToBetterStack(message, customerSlug, debugMode = false) {
 }
 
 // 🚀 Função principal do MyMetric OneTag Shopify
-function mymetric_onetag_shopify(trackingIds, customerSlug, debugMode = true) {
+function mymetric_onetag_shopify(event, trackingIds, customerSlug, debugMode = true) {
   // Log de inicialização
   if (debugMode) {
     console.log(
@@ -292,8 +292,9 @@ function mymetric_onetag_shopify(trackingIds, customerSlug, debugMode = true) {
 
   // Configurar eventos do Shopify
   if (debugMode) {
-    console.log(`%c🛍️ Eventos do Shopify configurados globalmente`, 'color: #f59e0b; font-size: 11px;');
+    console.log(`%c🛍️ Configurando eventos do Shopify`, 'color: #f59e0b; font-size: 11px;');
   }
+  setupShopifyEvents(debugMode, customerSlug);
 
   // Log de conclusão
   if (debugMode) {
@@ -355,9 +356,13 @@ function initPinterestTag(pinterestIds, debugMode = false) {
   // TODO: Implementar Pinterest Tag
 }
 
-// 🛍️ Eventos do Shopify (devem estar no escopo global do register)
-// Mapear eventos do Shopify Customer Events para GA4
-analytics.subscribe("page_viewed", (event) => {
+// 🛍️ Configurar eventos do Shopify
+function setupShopifyEvents(debugMode = false, customerSlug = 'unknown') {
+  if (debugMode) {
+    console.log(`%c  🛍️ Configurando 13 eventos do Shopify`, 'color: #f59e0b; font-size: 10px;');
+  }
+    // Mapear eventos do Shopify Customer Events para GA4
+    analytics.subscribe("page_viewed", (event) => {
     logMyMetricEvent('page_view', {
       location: event.context.document.location.href,
       title: event.context.document.title
@@ -645,23 +650,12 @@ analytics.subscribe("page_viewed", (event) => {
     
     sendToBetterStack(`UI Extension Error: ${alert?.appName} v${alert?.appVersion} (${alert?.appId})`, customerSlug, debugMode);
   });
+}
 
-// ---- Exemplo de uso correto no Shopify Web Pixels Extension:
-/*
-import {register} from '@shopify/web-pixels-extension';
 
-register(({analytics}) => {
-  // Inicializar MyMetric OneTag
-  mymetric_onetag_shopify([
-    "G-0JR4HXQK0K"           // GA4 ID
-  ], "linus", true); // customerSlug, debugMode
-  
-  // Os eventos analytics.subscribe já estão configurados acima
-  // Não precisa chamar setupShopifyEvents
-});
-*/
 
-// ---- Inicialização automática (apenas GA4 por enquanto):
-mymetric_onetag_shopify([
-  "G-0JR4HXQK0K"           // GA4 ID
-], "linus", true); // customerSlug, debugMode
+mymetric_onetag_shopify(
+  ["G-WQKK3VE3KF"],
+  "linus",
+  true
+);
